@@ -63,11 +63,19 @@ yum install -y postgresql13-server
 /usr/bin/systemctl start postgresql-13
 /usr/bin/systemctl enable postgresql-13
 
-# replace sha-256 with md5 in postgresql conf file
-PG_HBA_FILE="/var/lib/pgsql/13/data/pg_hba.conf"
-SEARCH_LINE="host    all             all             127.0.0.1\/32            scram-sha-256"
-REPLACE_LINE="host    all             all             127.0.0.1\/32            md5"
-sed -i "s/$SEARCH_LINE/$REPLACE_LINE/" "$PG_HBA_FILE"
+# TODO: fix security risk
+# replace sha-256 with trust in postgresql conf file
+pg_hba_orig="/var/lib/pgsql/13/data/pg_hba.conf"
+pg_hba_copy="/var/lib/pgsql/13/data/pg_hba.conf.bak"
+sudo cp $pg_hba_orig $pg_hba_copy
+sed -E -i "s/scram-sha-256/trust/g" "$pg_hba_orig"
+sed -E -i "s/peer/trust/g" "$pg_hba_orig"
+
+# allow listen_addresses
+psql_conf="/var/lib/pgsql/13/data/postgresql.conf"
+text1="#listen_addresses = 'localhost'"
+text2="listen_addresses = '*'"
+sed -E -i "s/$text1/$text2/" "$psql_conf"
 
 # restart postgres
 systemctl restart postgresql-13
@@ -117,11 +125,8 @@ usermod -s /sbin/nologin solr
 yum install -y jq
 
 # install R
-R_VERSION=4.2.3
 dnf install dnf-plugins-core
 dnf config-manager --set-enabled "codeready-builder-for-rhel-$RHEL_VERSION-*-rpms"
-# curl -O https://cdn.rstudio.com/r/centos-8/pkgs/R-${R_VERSION}-1-1.x86_64.rpm
-# yum install -y R-${R_VERSION}-1-1.x86_64.rpm
 yum install -y R-core R-core-devel
 
 # install R packages
@@ -145,11 +150,11 @@ wget https://github.com/CDLUC3/counter-processor/archive/v0.1.04.tar.gz
 tar xvfz v0.1.04.tar.gz
 useradd counter
 chown -R counter:counter /usr/local/counter-processor-0.1.04
-
 python3.9 -m ensurepip
 cd /usr/local/counter-processor-0.1.04
 pip3 install -r requirements.txt
 pip3 install psycopg2-binary
+cd /root
 
 
 #TODO: remove this after setting up mail server
@@ -160,14 +165,25 @@ nc -l 25 &
 # Install Dataverse
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # extract dvinstall
-unzip -d /home/dataverse/ dvinstall.zip
 sudo -u dataverse bash << EOF
+cd /home/dataverse
+wget https://github.com/IQSS/dataverse/releases/download/v$DATAVERSE_VERSION/dvinstall.zip
+unzip -d /home/dataverse/ dvinstall.zip
 cd /home/dataverse/dvinstall
 python3 install.py
 EOF
 
-# debugging:
-# docs: https://guides.dataverse.org/en/latest/installation/index.html
-# payara path: /usr/local/payara5/glassfish/domains/domain1/
-# payara asadmin: /usr/local/payara5/glassfish/bin
-# drop database: psql -U dvnapp -c 'DROP DATABASE "dvndb"' template1
+# Persistent Identifiers with Permalinks:
+curl -X PUT -d perma http://localhost:8080/api/admin/settings/:Protocol
+curl -X PUT -d 20.data http://localhost:8080/api/admin/settings/:Authority
+curl -X PUT -d "MyData/" http://localhost:8080/api/admin/settings/:Shoulder
+/usr/local/payara5/glassfish/bin/asadmin stop-domain
+/usr/local/payara5/glassfish/bin/asadmin start-domain
+
+# Database path
+sudo mkdir /dataverse_files
+/usr/local/payara5/glassfish/bin/asadmin $ASADMIN_OPTS create-jvm-options "\-Ddataverse.files.file.directory=/dataverse_files"
+
+# SMTP
+# /usr/local/payara5/glassfish/bin/asadmin delete-javamail-resource mail/notifyMailSession
+# /usr/local/payara5/glassfish/bin/asadmin create-javamail-resource --mailhost smtp.gmail.com --mailuser pradypantry5 --fromaddress pradypantry5@gmail.com --property mail.smtp.auth=true:mail.smtp.password=oops:mail.smtp.port=465:mail.smtp.socketFactory.port=465:mail.smtp.socketFactory.fallback=false:mail.smtp.socketFactory.class=javax.net.ssl.SSLSocketFactory mail/notifyMailSession

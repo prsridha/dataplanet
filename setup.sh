@@ -173,17 +173,23 @@ cd /home/dataverse/dvinstall
 python3 install.py
 EOF
 
+# change Payara admin password
+/usr/local/payara5/glassfish/bin/asadmin change-admin-password
+/usr/local/payara5/glassfish/bin/asadmin enable-secure-admin
+/usr/local/payara5/glassfish/bin/asadmin restart-domain
+
 # Persistent Identifiers with Permalinks:
 curl -X PUT -d perma http://localhost:8080/api/admin/settings/:Protocol
 curl -X PUT -d 20.data http://localhost:8080/api/admin/settings/:Authority
 curl -X PUT -d "MyData/" http://localhost:8080/api/admin/settings/:Shoulder
-/usr/local/payara5/glassfish/bin/asadmin stop-domain
-/usr/local/payara5/glassfish/bin/asadmin start-domain
+/usr/local/payara5/glassfish/bin/asadmin restart-domain
 
 # Database path
 sudo mkdir /dataverse_files
 /usr/local/payara5/glassfish/bin/asadmin $ASADMIN_OPTS create-jvm-options "\-Ddataverse.files.file.directory=/dataverse_files"
+chown -R dataverse:dataverse /dataverse_files
 
 # SMTP
 # /usr/local/payara5/glassfish/bin/asadmin delete-javamail-resource mail/notifyMailSession
 # /usr/local/payara5/glassfish/bin/asadmin create-javamail-resource --mailhost smtp.gmail.com --mailuser pradypantry5 --fromaddress pradypantry5@gmail.com --property mail.smtp.auth=true:mail.smtp.password=oops:mail.smtp.port=465:mail.smtp.socketFactory.port=465:mail.smtp.socketFactory.fallback=false:mail.smtp.socketFactory.class=javax.net.ssl.SSLSocketFactory mail/notifyMailSession
+/usr/local/payara5/glassfish/bin/asadmin restart-domain

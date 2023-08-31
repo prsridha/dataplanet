@@ -30,9 +30,16 @@ Run the following as Root, and reinstall Payara5, rerun Dataverse installer
 - /usr/local/payara5/glassfish/bin/asadmin undeploy dataverse
 - /usr/local/payara5/glassfish/bin/asadmin stop-domain
 - psql -U dvnapp -c 'DROP DATABASE "dvndb"' template1
-- curl http://localhost:8983/solr/collection1/update/json?commit=true -H "Content-type: application/json" -X POST -d "{\"delete\": { \"query\":\"*:*\"}}"
+- curl http://localhost:8983/solr/collection1/update/json?commit=true -H "Content-type: application/json" -X POST -d "{\"delete\": { \"query\":\"*:*\"}}" OR curl 'http://localhost:8983/solr/collection1/update/json?commit=true' -H -g 'Content-type: application/json' -X POST -d '{"delete": { "query":"*:*"}}'
 - rm -rf /usr/local/payara5
 - /usr/bin/systemctl enable payara.service
+
+## Publish Dataset Manually
+- API_TOKEN=146951f9-d99d-4eac-8db9-d92b6e26060b
+- SERVER_URL=https://dataplanet.ucsd.edu
+- DATAVERSE_ID=root
+- PERSISTENT_IDENTIFIER=perma:20.dataMyData/GAOZVI
+- curl -H "X-Dataverse-key:$API_TOKEN" -X POST -k "$SERVER_URL/api/dataverses/$DATAVERSE_ID/datasets/:import?pid=$PERSISTENT_IDENTIFIER&release=yes" --upload-file gao_dataset.json
 
 ## KT - todo
 - Credentials - dataverseAdmin, asadmin, psql, dataplanet@ucsd.edu

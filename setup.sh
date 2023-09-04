@@ -113,8 +113,6 @@ sudo cp solr.service /etc/systemd/system
 sudo systemctl daemon-reload
 sudo systemctl start solr.service
 sudo systemctl enable solr.service
-
-# secure solr
 usermod -s /sbin/nologin solr
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -176,19 +174,22 @@ python3 install.py
 
 # Persistent Identifiers with Permalinks:
 curl -X PUT -d perma http://localhost:8080/api/admin/settings/:Protocol
-curl -X PUT -d 20.data http://localhost:8080/api/admin/settings/:Authority
-curl -X PUT -d "MyData/" http://localhost:8080/api/admin/settings/:Shoulder
+curl -X PUT -d 83.ucsd http://localhost:8080/api/admin/settings/:Authority
+curl -X PUT -d "data/" http://localhost:8080/api/admin/settings/:Shoulder
 /usr/local/payara5/glassfish/bin/asadmin restart-domain
 
 # Database path
-sudo mkdir /home/prsridha/tmp_dataverse_files
-/usr/local/payara5/glassfish/bin/asadmin create-jvm-options "\-Ddataverse.files.file.directory=/home/prsridha/tmp_dataverse_files"
-chown -R prsridha /home/prsridha/tmp_dataverse_files
+/usr/local/payara5/glassfish/bin/asadmin create-jvm-options "\-Ddataverse.files.file.directory=/dataplanet"
+chown -R prsridha /dataplanet
 
 # SMTP
 /usr/local/payara5/glassfish/bin/asadmin delete-javamail-resource mail/notifyMailSession
-/usr/local/payara5/glassfish/bin/asadmin create-javamail-resource --mailhost smtp.ucsd.edu --mailuser grader-dsc102-01@ucsd.edu --fromaddress grader-dsc102-01@ucsd.edu mail/notifyMailSession
+/usr/local/payara5/glassfish/bin/asadmin create-javamail-resource --mailhost smtp.ucsd.edu --mailuser dataplanet@ucsd.edu --fromaddress dataplanet@ucsd.edu mail/notifyMailSession
 /usr/local/payara5/glassfish/bin/asadmin restart-domain
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+# Apache and Shibboleth Configurations
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 
 # Apache
 sudo yum install -y httpd mod_ssl
@@ -204,10 +205,6 @@ sudo yum install -y shibboleth
 
 # hide additional warnings
 /usr/local/payara5/glassfish/bin/asadmin set-log-levels org.glassfish.grizzly.http.server.util.RequestUtils=SEVERE
-
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
-# Apache and Shibboleth Configurations
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 
 # copy the virtual host config file
 sudo cp VirtualHost /etc/httpd/conf.d/dataplanet.uscd.edu.conf
